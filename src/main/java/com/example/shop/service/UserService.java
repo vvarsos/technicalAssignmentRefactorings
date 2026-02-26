@@ -5,7 +5,9 @@ import com.example.shop.model.User;
 import com.example.shop.store.InMemoryStore;
 import java.time.Instant;
 import java.util.Locale;
+import org.springframework.stereotype.Service;
 
+@Service
 public class UserService {
   private final InMemoryStore store = InMemoryStore.getInstance();
 

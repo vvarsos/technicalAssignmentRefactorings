@@ -5,20 +5,27 @@ import com.example.shop.model.Order;
 import com.example.shop.model.OrderItem;
 import com.example.shop.model.User;
 import com.example.shop.store.InMemoryStore;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.stereotype.Service;
+
+@Service
 public class OrderService {
+
   private static final ObjectMapper MAPPER = new ObjectMapper();
 
   private final InMemoryStore store = InMemoryStore.getInstance();
-  private final NotificationClient notifier = new NotificationClient();
+  private final NotificationClient notifier;
+
+  public OrderService(NotificationClient notifier) {
+    this.notifier = notifier;
+  }
 
   public Order createOrder(CreateOrderRequest req) {
     User user = store.getUser(req.getUserId());
@@ -26,12 +33,12 @@ public class OrderService {
       throw new IllegalArgumentException("unknown user");
     }
 
-    double total = req.getItems().stream()
-        .mapToDouble(i -> i.getQuantity() * i.getUnitPrice())
-        .sum();
+    double total = calculateTotal(req.getItems());
 
     long id = store.nextOrderId();
-    Order order = new Order(id, req.getUserId(), req.getItems(), total, "NEW", Instant.now(), req.getNotifyUrl());
+    Order order = new Order(id, req.getUserId(), req.getItems(), total, "NEW",
+            Instant.now(), req.getNotifyUrl());
+
     store.saveOrder(order);
 
     if (total > 1000) {
@@ -40,7 +47,9 @@ public class OrderService {
 
     auditSnapshot();
 
-    notifier.notifyAsync(order).orTimeout(1500, java.util.concurrent.TimeUnit.MILLISECONDS).exceptionally(ex -> null);
+    notifier.notifyAsync(order)
+            .orTimeout(1500, java.util.concurrent.TimeUnit.MILLISECONDS)
+            .exceptionally(ex -> null);
 
     return order;
   }
@@ -53,19 +62,28 @@ public class OrderService {
     List<Order> orders = store.getOrdersForUser(userId);
     for (Order o : orders) {
       normalizeItems(o.getItems());
-      User u = store.getUser(o.getUserId());
-      if (u != null) {
-        o.setStatus(o.getStatus());
-      }
     }
     return orders;
   }
 
   public Map<String, Object> stats() {
+    return calculateStats();
+  }
+
+  private double calculateTotal(List<OrderItem> items) {
+    return items.stream()
+            .mapToDouble(i -> i.getQuantity() * i.getUnitPrice())
+            .sum();
+  }
+
+  private Map<String, Object> calculateStats() {
     Map<String, Object> out = new HashMap<>();
     out.put("users", store.userCount());
     out.put("orders", store.orderCount());
-    out.put("latestOrderId", store.getOrdersUnsafe().keySet().stream().max(Long::compareTo).orElse(0L));
+    out.put("latestOrderId",
+            store.getOrdersUnsafe().keySet().stream()
+                    .max(Long::compareTo)
+                    .orElse(0L));
     return out;
   }
 

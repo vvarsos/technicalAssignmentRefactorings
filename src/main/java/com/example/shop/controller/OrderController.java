@@ -19,12 +19,16 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/orders")
 public class OrderController {
-  private final OrderService orders = new OrderService();
+  private final OrderService orderService;
+
+  public OrderController(OrderService orderService) {
+    this.orderService = orderService;
+  }
 
   @PostMapping
   public ResponseEntity<?> create(@Valid @RequestBody CreateOrderRequest req) {
     try {
-      Order created = orders.createOrder(req);
+      Order created = orderService.createOrder(req);
       return ResponseEntity.ok(created);
     } catch (Exception ex) {
       Map<String, Object> body = new HashMap<>();
@@ -36,7 +40,7 @@ public class OrderController {
 
   @GetMapping("/{id}")
   public ResponseEntity<Order> get(@PathVariable long id) {
-    Order order = orders.getOrder(id);
+    Order order = orderService.getOrder(id);
     if (order == null) {
       return ResponseEntity.notFound().build();
     }
@@ -45,11 +49,11 @@ public class OrderController {
 
   @GetMapping
   public ResponseEntity<List<Order>> list(@RequestParam String userId) {
-    return ResponseEntity.ok(orders.listOrdersForUser(userId));
+    return ResponseEntity.ok(orderService.listOrdersForUser(userId));
   }
 
   @GetMapping("/stats")
   public ResponseEntity<Map<String, Object>> stats() {
-    return ResponseEntity.ok(orders.stats());
+    return ResponseEntity.ok(orderService.stats());
   }
 }

@@ -15,20 +15,24 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/users")
 public class UserController {
-  private final UserService users = new UserService();
+  private final UserService userService;
+
+  public UserController(UserService userService) {
+    this.userService = userService;
+  }
 
   @PostMapping
   public ResponseEntity<User> create(@Valid @RequestBody CreateUserRequest req) {
-    User created = users.createUser(req);
+    User created = userService.createUser(req);
     return ResponseEntity.ok(created);
   }
 
   @GetMapping("/{id}")
   public ResponseEntity<User> get(@PathVariable String id) {
-    User u = users.getUser(id);
-    if (u == null) {
+    User user = userService.getUser(id);
+    if (user == null) {
       return ResponseEntity.notFound().build();
     }
-    return ResponseEntity.ok(u);
+    return ResponseEntity.ok(user);
   }
 }

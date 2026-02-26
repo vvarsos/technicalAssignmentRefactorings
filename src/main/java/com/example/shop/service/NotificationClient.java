@@ -9,11 +9,13 @@ import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import org.springframework.stereotype.Component;
 
+@Component
 public class NotificationClient {
-  private final HttpClient client = HttpClient.newBuilder()
-      .connectTimeout(Duration.ofSeconds(2))
-      .build();
+  private final HttpClient httpClient = HttpClient.newBuilder()
+          .connectTimeout(Duration.ofSeconds(2))
+          .build();
   private final ExecutorService executor = Executors.newSingleThreadExecutor();
 
   public CompletableFuture<Void> notifyAsync(Order order) {
@@ -23,11 +25,11 @@ public class NotificationClient {
     return CompletableFuture.runAsync(() -> {
       try {
         HttpRequest req = HttpRequest.newBuilder()
-            .uri(URI.create(order.getNotifyUrl()))
-            .timeout(Duration.ofSeconds(3))
-            .POST(HttpRequest.BodyPublishers.ofString("orderId=" + order.getId()))
-            .build();
-        client.send(req, HttpResponse.BodyHandlers.discarding());
+                .uri(URI.create(order.getNotifyUrl()))
+                .timeout(Duration.ofSeconds(3))
+                .POST(HttpRequest.BodyPublishers.ofString("orderId=" + order.getId()))
+                .build();
+        httpClient.send(req, HttpResponse.BodyHandlers.discarding());
       } catch (Exception ignored) {
       }
     }, executor);
