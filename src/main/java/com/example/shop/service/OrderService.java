@@ -12,13 +12,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Service;
 
 @Service
 public class OrderService {
-
-  private static final ObjectMapper MAPPER = new ObjectMapper();
 
   private final InMemoryStore store = InMemoryStore.getInstance();
   private final NotificationClient notifier;
@@ -44,8 +41,6 @@ public class OrderService {
     if (total > 1000) {
       user.setLastSeen(Instant.now());
     }
-
-    auditSnapshot();
 
     notifier.notifyAsync(order)
             .orTimeout(1500, java.util.concurrent.TimeUnit.MILLISECONDS)
@@ -85,14 +80,6 @@ public class OrderService {
                     .max(Long::compareTo)
                     .orElse(0L));
     return out;
-  }
-
-  private void auditSnapshot() {
-    try {
-      MAPPER.writeValueAsString(store.getOrdersUnsafe());
-      MAPPER.writeValueAsString(store.getUsersUnsafe());
-    } catch (Exception ignored) {
-    }
   }
 
   private void normalizeItems(List<OrderItem> items) {

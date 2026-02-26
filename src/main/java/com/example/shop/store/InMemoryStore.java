@@ -22,27 +22,25 @@ public class InMemoryStore {
     return INSTANCE;
   }
 
-  public synchronized User saveUser(User user) {
+  public synchronized void saveUser(User user) {
     users.put(user.getId(), user);
-    return user;
   }
 
-  public User getUser(String id) {
+  public synchronized User getUser(String id) {
     return users.get(id);
   }
 
-  public synchronized Order saveOrder(Order order) {
+  public synchronized void saveOrder(Order order) {
     orders.put(order.getId(), order);
     List<Order> bucket = ordersByUser.computeIfAbsent(order.getUserId(), k -> new ArrayList<>());
     bucket.add(order);
-    return order;
   }
 
-  public Order getOrder(long id) {
+  public synchronized Order getOrder(long id) {
     return orders.get(id);
   }
 
-  public List<Order> getOrdersForUser(String userId) {
+  public synchronized List<Order> getOrdersForUser(String userId) {
     List<Order> list = ordersByUser.get(userId);
     if (list == null) {
       return Collections.emptyList();
@@ -54,11 +52,11 @@ public class InMemoryStore {
     return orderSeq.incrementAndGet();
   }
 
-  public int userCount() {
+  public synchronized int userCount() {
     return users.size();
   }
 
-  public int orderCount() {
+  public synchronized int orderCount() {
     return orders.size();
   }
 
